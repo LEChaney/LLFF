@@ -24,6 +24,9 @@ def load_colmap_data(realdir):
     
     imagesfile = os.path.join(realdir, 'sparse/0/images.bin')
     imdata = read_model.read_images_binary(imagesfile)
+    for key in range(1, max(imdata.keys())):
+        if key not in imdata:
+            print(f'Missing {key}')
     
     w2c_mats = []
     bottom = np.array([0,0,0,1.]).reshape([1,4])
@@ -60,7 +63,7 @@ def save_poses(basedir, poses, pts3d, perm):
         pts_arr.append(pts3d[k].xyz)
         cams = [0] * poses.shape[-1]
         for ind in pts3d[k].image_ids:
-            if len(cams) < ind - 1:
+            if len(cams) <= ind - 1:
                 print('ERROR: the correct camera poses for current points cannot be accessed')
                 return
             cams[ind-1] = 1
