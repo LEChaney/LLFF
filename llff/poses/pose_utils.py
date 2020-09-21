@@ -71,10 +71,8 @@ def save_poses(basedir, poses, pts3d, perm):
     print( 'Points', pts_arr.shape, 'Visibility', vis_arr.shape )
     
     zvals = np.sum(-(pts_arr[:, np.newaxis, :].transpose([2,0,1]) - poses[:3, 3:4, :]) * poses[:3, 2:3, :], 0)
-    # vis_arr = (vis_arr) & (zvals > 0)
-    # valid_z = zvals[vis_arr==1]
-    # print( 'Depth stats', valid_z.min(), valid_z.max(), valid_z.mean() )
-    # assert(valid_z.min() > 0)
+    valid_z = zvals[:, perm][vis_arr==1]
+    print( 'Depth stats', valid_z.min(), valid_z.max(), valid_z.mean() )
     
     save_arr = []
     for ind, i in enumerate(perm):
@@ -82,7 +80,7 @@ def save_poses(basedir, poses, pts3d, perm):
         zs = zvals[:, i]
         zs = zs[vis==1]
         close_depth, inf_depth = np.percentile(zs, .1), np.percentile(zs, 99.9)
-        print( i, close_depth, inf_depth )
+        # print( i, close_depth, inf_depth )
         
         save_arr.append(np.concatenate([poses[..., i].ravel(), np.array([close_depth, inf_depth])], 0))
     save_arr = np.array(save_arr)
@@ -259,29 +257,38 @@ def load_data(basedir, factor=None, width=None, height=None, load_imgs=True):
             
     
 def gen_poses(basedir, match_type, factors=None):
-    
-    files_needed = ['{}.bin'.format(f) for f in ['cameras', 'images', 'points3D']]
-    if os.path.exists(os.path.join(basedir, 'sparse/0')):
-        files_had = os.listdir(os.path.join(basedir, 'sparse/0'))
+    sub_directories = [f for f in os.scandir(basedir) if f.is_dir()]
+    if 'images' not in [f.name.lower() for f in sub_directories]:
+        # Recursively search for folder containing images
+        for f in sub_directories:
+            gen_poses(f.path, match_type, factors=factors)
+        return True
     else:
-        files_had = []
-    if not all([f in files_had for f in files_needed]):
-        print( 'Need to run COLMAP' )
-        run_colmap(basedir, match_type)
-    else:
-        print('Don\'t need to run COLMAP')
+        # Perform camera pose generation on image set
+        print(f'Generating pose and bounds data for {basedir}')
+        files_needed = ['{}.bin'.format(f) for f in ['cameras', 'images', 'points3D']]
+        if os.path.exists(os.path.join(basedir, 'sparse/0')):
+            files_had = os.listdir(os.path.join(basedir, 'sparse/0'))
+        else:
+            files_had = []
+        if not all([f in files_had for f in files_needed]):
+            print( 'Need to run COLMAP' )
+            run_colmap(basedir, match_type)
+        else:
+            print('Don\'t need to run COLMAP')
+            
+        print( 'Post-colmap')
         
-    print( 'Post-colmap')
-    
-    poses, pts3d, perm = load_colmap_data(basedir)
-    
-    save_poses(basedir, poses, pts3d, perm)
-    
-    if factors is not None:
-        print( 'Factors:', factors)
-        minify(basedir, factors)
-    
-    print( 'Done with imgs2poses' )
-    
-    return True
+        poses, pts3d, perm = load_colmap_data(basedir)
+        
+        save_poses(basedir, poses, pts3d, perm)
+        
+        if factors is not None:
+            print( 'Factors:', factors)
+            minify(basedir, factors)
+        
+        print( 'Done with imgs2poses' )
+        print()
+        
+        return True
     
