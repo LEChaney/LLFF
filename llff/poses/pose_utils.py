@@ -71,16 +71,18 @@ def save_poses(basedir, poses, pts3d, perm):
     print( 'Points', pts_arr.shape, 'Visibility', vis_arr.shape )
     
     zvals = np.sum(-(pts_arr[:, np.newaxis, :].transpose([2,0,1]) - poses[:3, 3:4, :]) * poses[:3, 2:3, :], 0)
-    valid_z = zvals[vis_arr==1]
-    print( 'Depth stats', valid_z.min(), valid_z.max(), valid_z.mean() )
+    # vis_arr = (vis_arr) & (zvals > 0)
+    # valid_z = zvals[vis_arr==1]
+    # print( 'Depth stats', valid_z.min(), valid_z.max(), valid_z.mean() )
+    # assert(valid_z.min() > 0)
     
     save_arr = []
-    for i in perm:
-        vis = vis_arr[:, i]
+    for ind, i in enumerate(perm):
+        vis = vis_arr[:, ind]
         zs = zvals[:, i]
         zs = zs[vis==1]
         close_depth, inf_depth = np.percentile(zs, .1), np.percentile(zs, 99.9)
-        # print( i, close_depth, inf_depth )
+        print( i, close_depth, inf_depth )
         
         save_arr.append(np.concatenate([poses[..., i].ravel(), np.array([close_depth, inf_depth])], 0))
     save_arr = np.array(save_arr)
