@@ -75,13 +75,13 @@ def save_poses(basedir, poses, pts3d, perm):
     
     poses = poses[:,:,perm]
     zvals = np.sum(-(pts_arr[:, np.newaxis, :].transpose([2,0,1]) - poses[:3, 3:4, :]) * poses[:3, 2:3, :], 0)
-    valid_z = zvals[vis_arr]
 
     # Safety check for negative z-values (these shouldn't exist but occasionally happen)
-    invalid_z = valid_z <= 0
-    if np.any(invalid_z):
+    invalid_arr = (zvals <= 0) & (vis_arr == True)
+    if np.any(invalid_arr):
         print('WARNING: Negative z values found for registered points')
-    valid_z = valid_z[~invalid_z]
+    vis_arr = vis_arr & ~invalid_arr
+    valid_z = zvals[vis_arr]
 
     print( 'Depth stats', valid_z.min(), valid_z.max(), valid_z.mean() )
     
