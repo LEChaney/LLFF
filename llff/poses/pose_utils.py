@@ -66,23 +66,30 @@ def save_poses(basedir, poses, pts3d, perm):
             if len(cams) <= ind - 1:
                 print('ERROR: the correct camera poses for current points cannot be accessed')
                 return
-            cams[ind-1] = 1
+            cams[ind-1] = True
         vis_arr.append(cams)
 
     pts_arr = np.array(pts_arr)
-    vis_arr = np.array(vis_arr)
+    vis_arr = np.array(vis_arr, dtype=bool)
     print( 'Points', pts_arr.shape, 'Visibility', vis_arr.shape )
     
     poses = poses[:,:,perm]
     zvals = np.sum(-(pts_arr[:, np.newaxis, :].transpose([2,0,1]) - poses[:3, 3:4, :]) * poses[:3, 2:3, :], 0)
-    valid_z = zvals[vis_arr==1]
+    valid_z = zvals[vis_arr]
+
+    # Safety check for negative z-values (these shouldn't exist but occasionally happen)
+    invalid_z = valid_z <= 0
+    if np.any(invalid_z):
+        print('WARNING: Negative z values found for registered points')
+    valid_z = valid_z[~invalid_z]
+
     print( 'Depth stats', valid_z.min(), valid_z.max(), valid_z.mean() )
     
     save_arr = []
     for i in range(zvals.shape[1]):
         vis = vis_arr[:, i]
         zs = zvals[:, i]
-        zs = zs[vis==1]
+        zs = zs[vis]
         close_depth, inf_depth = np.percentile(zs, .1), np.percentile(zs, 99.9)
         # print( i, close_depth, inf_depth )
         
