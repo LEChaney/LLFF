@@ -31,9 +31,9 @@ def load_colmap_data(realdir):
     w2c_mats = []
     bottom = np.array([0,0,0,1.]).reshape([1,4])
     
-    names = [imdata[k].name for k in imdata]
-    print( 'Images #', len(names))
-    perm = np.argsort(names)
+    ids = [imdata[k].id for k in imdata]
+    print( 'Images #', len(ids))
+    perm = np.argsort(ids)
     for k in imdata:
         im = imdata[k]
         R = im.qvec2rotmat()
