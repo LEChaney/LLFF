@@ -24,9 +24,9 @@ def load_colmap_data(realdir):
     
     imagesfile = os.path.join(realdir, 'sparse/0/images.bin')
     imdata = read_model.read_images_binary(imagesfile)
-    for key in range(1, max(imdata.keys())):
-        if key not in imdata:
-            print(f'Missing {key}')
+    # for key in range(1, max(imdata.keys())):
+    #     if key not in imdata:
+    #         print(f'Missing {key}')
     
     w2c_mats = []
     bottom = np.array([0,0,0,1.]).reshape([1,4])
@@ -57,6 +57,10 @@ def load_colmap_data(realdir):
 
 
 def save_poses(basedir, poses, pts3d, perm):
+    if len(pts3d) == 0:
+        print('ERROR: no 3D points found in COLMAP output')
+        return
+
     pts_arr = []
     vis_arr = []
     for k in pts3d:
